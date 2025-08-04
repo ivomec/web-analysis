@@ -2,38 +2,89 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 수의사</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 수의사 (Vertex AI)</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>동물병원 검사결과 AI 분석기</h1>
+    <div class="container">
+        <h1>동물병원 검사결과 AI 분석기 (v2. Secure)</h1>
+        <p class="description">환자의 검사 결과(CBC, 혈청 화학, 뇨검사 등)를 아래에 붙여넣고 분석을 요청하세요.</p>
 
-    <h3>검사결과 입력:</h3>
-    <textarea id="inputText" rows="10" cols="50" placeholder="여기에 혈액검사 또는 다른 검사결과를 붙여넣으세요..."></textarea>
-    <br>
-    <button id="analyzeButton">AI 분석 요청</button>
+        <textarea id="inputText" rows="15" placeholder="여기에 혈액검사 또는 다른 검사결과를 붙여넣으세요..."></textarea>
+        <button id="analyzeButton">
+            <span class="button-text">AI 분석 요청</span>
+            <div class="spinner" style="display: none;"></div>
+        </button>
 
-    <hr>
+        <hr>
 
-    <h3>AI 분석 결과:</h3>
-    <div id="resultArea">
-        <p>분석 결과가 여기에 표시됩니다.</p>
+        <h3>AI 분석 결과:</h3>
+        <div id="resultArea">
+            <p>분석 결과가 여기에 표시됩니다.</p>
+        </div>
     </div>
 
     <script>
-        // HTML 요소들을 자바스크립트 변수에 연결합니다.
+        // 1. 여기에 원장님의 Cloud Run URL이 이미 입력되어 있습니다.
+        const CLOUD_FUNCTION_URL = 'https://vet-ai-analyzer-935188329436.asia-northeast3.run.app';
+
         const analyzeButton = document.getElementById('analyzeButton');
+        const buttonText = document.querySelector('.button-text');
+        const spinner = document.querySelector('.spinner');
         const inputText = document.getElementById('inputText');
         const resultArea = document.getElementById('resultArea');
 
-        // 'AI 분석 요청' 버튼에 클릭 이벤트 리스너를 추가합니다.
-        analyzeButton.addEventListener('click', () => {
-            // 1. 입력창에 있는 텍스트를 가져옵니다.
-            const textToAnalyze = inputText.value;
+        analyzeButton.addEventListener('click', async () => {
+            const promptText = inputText.value;
 
-            // 2. 결과 영역의 내용을 임시로 바꿉니다. (AI가 아직 없으므로, 입력된 내용을 그대로 보여줍니다)
-            resultArea.innerHTML = `<p><strong>분석할 내용:</strong> ${textToAnalyze}</p>`;
+            if (!promptText.trim()) {
+                alert('분석할 검사결과를 입력해주세요.');
+                return;
+            }
+
+            setLoading(true);
+            resultArea.innerHTML = '';
+
+            try {
+                // 이제 우리가 만든 Cloud Run 서비스를 호출합니다.
+                const response = await fetch(CLOUD_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: promptText }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Cloud Run 서버 오류: ${response.status} ${errorText}`);
+                }
+
+                const resultText = await response.text();
+                // AI 응답에서 줄바꿈을 웹페이지의 줄바꿈(<br>)으로 변경
+                const formattedResponse = resultText.replace(/\n/g, '<br>');
+                resultArea.innerHTML = `<p>${formattedResponse}</p>`;
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultArea.innerHTML = `<p style="color: red;">오류가 발생했습니다: ${error.message}</p>`;
+            } finally {
+                setLoading(false);
+            }
         });
-    </script>
 
+        function setLoading(isLoading) {
+            if (isLoading) {
+                analyzeButton.disabled = true;
+                buttonText.style.display = 'none';
+                spinner.style.display = 'block';
+            } else {
+                analyzeButton.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
