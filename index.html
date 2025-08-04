@@ -26,8 +26,8 @@
     </div>
 
     <script>
-        // 1. 여기에 원장님의 Cloud Run URL이 이미 입력되어 있습니다.
-        const CLOUD_FUNCTION_URL = 'https://vet-ai-analyzer-935188329436.asia-northeast3.run.app';
+        // 새로운 미국(us-central1) 서버의 주소를 입력했습니다.
+        const CLOUD_FUNCTION_URL = 'https://vet-ai-analyzer-935188329436.us-central1.run.app';
 
         const analyzeButton = document.getElementById('analyzeButton');
         const buttonText = document.querySelector('.button-text');
@@ -47,7 +47,6 @@
             resultArea.innerHTML = '';
 
             try {
-                // 이제 우리가 만든 Cloud Run 서비스를 호출합니다.
                 const response = await fetch(CLOUD_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
@@ -62,7 +61,6 @@
                 }
 
                 const resultText = await response.text();
-                // AI 응답에서 줄바꿈을 웹페이지의 줄바꿈(<br>)으로 변경
                 const formattedResponse = resultText.replace(/\n/g, '<br>');
                 resultArea.innerHTML = `<p>${formattedResponse}</p>`;
 
